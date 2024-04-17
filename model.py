@@ -21,6 +21,7 @@ class Fork:
         self.branches = []
         self.name = ''
         self.parent_fork = None
+        self.keep = False
 
 
 def fill_branches(parent_fork, time_limit, candidates):
@@ -194,9 +195,56 @@ def plot_forks(fork, fig, param):
     # Show the plot
     # fig.show()
 
+def copy_filtered_branch(fork, filtered_branch):
+    if fork.keep:
+        new_fork = Fork(fork.df.copy())
+        new_fork.time = fork.time
+        new_fork.e_amount = fork.e_amount
+        new_fork.m_amount = fork.m_amount
+        new_fork.unit = fork.unit
+        new_fork.bt = fork.bt
+        new_fork.name = fork.name
+        new_fork.keep = True
+
+        filtered_branch.branches.append(new_fork)
+
+        if fork.parent_fork is not None:
+            parent_fork = next((f for f in filtered_branch.branches if f.name == fork.parent_fork.name), None)
+            if parent_fork is None:
+                parent_fork = copy_filtered_branch(fork.parent_fork, filtered_branch)
+            new_fork.parent_fork = parent_fork
+
+        return new_fork
+
+def set_keep_recursive(fork):
+    fork.keep = True
+    if fork.parent_fork is not None:
+        set_keep_recursive(fork.parent_fork)
+
+def filter_forks(forks, tops, initial_branch):
+    filtered_branch = Fork(initial_branch.df.copy())
+    filtered_branch.time = initial_branch.time
+    filtered_branch.e_amount = initial_branch.e_amount
+    filtered_branch.m_amount = initial_branch.m_amount
+    filtered_branch.unit = initial_branch.unit
+    filtered_branch.bt = initial_branch.bt
+    filtered_branch.name = initial_branch.name
+
+    for category in tops:
+        top_fork_name = tops[category]['name']
+        for fork in forks:
+            if fork.name == top_fork_name:
+                set_keep_recursive(fork)
+
+    for fork in forks:
+        if fork.keep:
+            copy_filtered_branch(fork, filtered_branch)
+
+    return filtered_branch
+
 
 def main():
-    time_limit = 180
+    time_limit = 120
     initial_state = {
             'unit': ['game', 'com', 'mex', 'solar', 'wind','con', 'ec', 'nano', 'solar_adv', 'es', 'ms'],
             'cnt': [1, 1, 3, 2, 3, 1, 0, 0, 0, 0, 0]
@@ -255,6 +303,9 @@ def main():
     count_of_forks, forks, tops = count_forks(branch, tops, forks)
     print('total forks:', count_of_forks)
     print('tops:', tops)
+
+    branch = filter_forks(forks, tops, branch)
+    print('Filtered forks count:', len(branch.branches))
 
     if True:
 
