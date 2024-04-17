@@ -24,7 +24,9 @@ class Fork:
         self.keep = False
 
 
-def fill_branches(parent_fork, time_limit, candidates):
+def fill_branches(parent_fork, time_limit, candidates, counter):
+    # Print counter without newline
+    print(f"\r{counter} ", end="")
     # Print the current state
     # print('> unit:', parent_fork.unit)
     # print('> time:', parent_fork.time)
@@ -81,9 +83,11 @@ def fill_branches(parent_fork, time_limit, candidates):
         # print(f"< name: {fork.name}, {parent_e_prod} >> {e_prod}")
         if fork.time > time_limit:
             # print('time is over:', fork.time)
-            return
-        fill_branches(fork, time_limit, candidates)
+            return counter
+        counter += 1
+        counter = fill_branches(fork, time_limit, candidates, counter)
         parent_fork.branches.append(fork)
+    return counter
 
 
 # calculate the overall forks count
@@ -244,7 +248,7 @@ def filter_forks(forks, tops, initial_branch):
 
 
 def main():
-    time_limit = 120
+    time_limit = 300
     initial_state = {
             'unit': ['game', 'com', 'mex', 'solar', 'wind','con', 'ec', 'nano', 'solar_adv', 'es', 'ms'],
             'cnt': [1, 1, 3, 2, 3, 1, 0, 0, 0, 0, 0]
@@ -270,7 +274,7 @@ def main():
     branch.bt = merged_df[merged_df['unit'] == 'con']['ubt'].values[0]/300 # By com
 
     print('Generating forks..')
-    fill_branches(branch, time_limit, candidates)
+    counter = fill_branches(branch, time_limit, candidates, 0)
 
     forks = []
     tops = {
